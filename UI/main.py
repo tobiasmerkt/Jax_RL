@@ -1,6 +1,6 @@
 import gym
 import jax
-from jax import jit, numpy as jnp
+from jax import numpy as jnp
 import numpy as np
 import flax
 import flax.linen as nn
@@ -14,7 +14,7 @@ env = gym.make("CartPole-v0")
 
 # Set seed
 seed = 42
-env.seed(seed)
+env.reset(seed=seed)
 key = jax.random.PRNGKey(seed)
 key1, key2, key3 = jax.random.split(key, num=3)
 np.random.seed(seed)
@@ -206,8 +206,6 @@ def train_step(
             (critic_params, critic_opt_state))
 
 # Run training loop
-% % time
-
 min_episodes_criterion = 100
 max_episodes = 10000
 max_steps_per_episode = 1000
