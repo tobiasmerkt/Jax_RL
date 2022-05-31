@@ -1,1 +1,1 @@
-from UI import main
+from UI import run
