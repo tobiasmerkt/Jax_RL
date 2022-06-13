@@ -1,23 +1,17 @@
-import sys
-import gym
 import jax
-from jax import numpy as jnp
+from jax import jit, numpy as jnp
 import numpy as np
-import flax
-import flax.linen as nn
-import optax
 import tqdm
-import collections #used for storing last 100 rewards
+import collections  # used for storing last 100 rewards
 from matplotlib import pyplot as plt
-sys.path.append('/tikhome/tmerkt/PycharmProjects/Jax_RL')
-import Total_Background as rl
+import time
+from Total_Background.main import *
 
-# TODO: fix run file
-
-# Run training loop
-min_episodes_criterion = 100
-max_episodes = 10000
+# Run loop
+min_episodes_criterion = 20
+max_episodes = 20
 max_steps_per_episode = 1000
+lr = 1e-2
 
 # Stop when average reward >= 195 over 100 consecutive trials
 reward_threshold = 195
@@ -26,30 +20,18 @@ running_reward = 0
 # Discount factor for future rewards
 gamma = 0.99
 
-# Keep running reward of last 100 episodes
+# Keep running reward of last episodes
 episodes_reward: collections.deque = collections.deque(maxlen=min_episodes_criterion)
 
-# Initialise optimiser
-actor_optimizer = optax.adam(learning_rate=0.01)
-actor_opt_state = actor_optimizer.init(actor_params)
-
-critic_optimizer = optax.adam(learning_rate=0.01)
-critic_opt_state = critic_optimizer.init(critic_params)
-
+# Initialise state
+state = create_train_state(key1, lr)
+start_time = time.time() #TODO
 with tqdm.trange(max_episodes) as t:
     for i in t:
         initial_state = jnp.array(env.reset(), dtype=jnp.float32)
-        (episode_reward,
-         (actor_params, actor_opt_state),
-         (critic_params, critic_opt_state)) = train_step(
+        episode_reward, state = train_step(
             initial_state,
-            model,
-            actor_params,
-            critic_params,
-            actor_optimizer,
-            critic_optimizer,
-            actor_opt_state,
-            critic_opt_state,
+            state,
             gamma,
             max_steps_per_episode)
 
@@ -66,5 +48,6 @@ with tqdm.trange(max_episodes) as t:
 
         if running_reward > reward_threshold and i >= min_episodes_criterion:
             break
-
+end_time = time.time() #TODO
 print(f'\nSolved at episode {i}: average reward: {running_reward}!')
+print(f'Time Difference: ', end_time - start_time)
