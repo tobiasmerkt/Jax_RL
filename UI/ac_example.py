@@ -13,6 +13,9 @@ import time
 import sys
 sys.path.append('/tikhome/tmerkt/PycharmProjects/Jax_RL')
 
+from jax_md import simulate, energy, util, quantity, dataclasses, smap
+from jax_md import space as space
+
 # Create the environment
 env = gym.make("CartPole-v1")
 
