@@ -4,7 +4,6 @@ import numpy as np
 from jax_md import simulate, energy, util, quantity, dataclasses, smap
 from jax_md import space as space
 
-
 static_cast = util.static_cast
 Array = util.Array
 f32 = util.f32
@@ -192,7 +191,8 @@ class Environment:
             dt=0.1,
             kt=0,
             force_value=2.0,
-            rotation_angle=15):
+            rotation_angle=15,
+            reward_value=10):
 
         self.particle_number = particle_number
         self.dim = world.dim
@@ -201,6 +201,7 @@ class Environment:
         self.kt = kt
         self.force_value = force_value
         self.rotation_angle = rotation_angle
+        self.reward_value = reward_value
 
         # get the shift, displacement and metric from the used world.
         self.shift = world.shift
@@ -227,9 +228,6 @@ class Environment:
                                 index=i))
         self.agents = agents
         self.swarm = Swarm(agents)
-
-        # Initialize a reward for the beginning.
-        self.rewards = list(jnp.zeros(self.particle_number))
 
         # Initialize the force and the jax-simulation.
         self.force = Force(force=self.force_value, metric=self.metric)
@@ -259,9 +257,13 @@ class Environment:
             location = jnp.array([jnp.ones(self.dim) * 0.5])
 
         rescaled_positions = positions / self.size
-        reward = 10 / jnp.sqrt(2) * (jnp.sqrt(2) - self.metric(rescaled_positions,
-                                                               location))
-        return jnp.squeeze(reward)
+        reward = self.reward_value / jnp.sqrt(2) * (jnp.sqrt(2) - self.metric(
+            rescaled_positions,
+            location))
+        if self.particle_number != 1:
+            return jnp.squeeze(reward)
+        else:
+            return reward
 
     def step(self, actions: Array):
         """
@@ -315,7 +317,7 @@ class Environment:
         self.swarm.set_positions(self.swarm.state.position)
 
         reward = self._reward(self.swarm.positions)
-        print(f"reward are {reward}")
+
         environment_return = []
         for index, agent in enumerate(self.swarm):
             environment_return.append({"agent": agent, "reward": reward[index]})
