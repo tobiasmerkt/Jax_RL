@@ -10,6 +10,8 @@ import tqdm
 import collections  # used for storing last 100 rewards
 from matplotlib import pyplot as plt
 import time
+import sys
+sys.path.append('/tikhome/tmerkt/PycharmProjects/Jax_RL')
 
 # Create the environment
 env = gym.make("CartPole-v1")
@@ -69,17 +71,18 @@ def run_episode(
     values = jnp.array([], dtype=jnp.float32)
     rewards = jnp.array([], dtype=jnp.float32)
 
-    initial_state_shape = jnp.shape(initial_state)  # TODO: check if necessary
+    apply_fn = ActorCritic(num_actions, num_hidden_units).apply
+    apply_fn_jit = jit(apply_fn)
+    softmax_fn = nn.softmax
+    softmax_fn_jit = jit(softmax_fn)
 
     for t in range(max_steps):
-        action_logits_t, value = ActorCritic(num_actions, num_hidden_units).apply(
-            params, initial_state
-        )
+        action_logits_t, value = apply_fn_jit(params, initial_state)
 
         # Sample action from action probability distribution
         rng = jax.random.PRNGKey(np.random.randint(0, 1236534623))
         action = jax.random.categorical(rng, logits=action_logits_t)
-        action_probs_t = nn.softmax(action_logits_t)
+        action_probs_t = softmax_fn_jit(action_logits_t)
 
         # Store probs of action chosen
         action_probs = jnp.append(action_probs, action_probs_t[action])
@@ -89,7 +92,6 @@ def run_episode(
 
         # Apply action to environment to get next state and reward
         state, reward, done = env_step(jax.device_get(action))
-        state = jnp.reshape(state, initial_state_shape)  # TODO: check if necessary
 
         # Store reward
         rewards = jnp.append(rewards, reward)
@@ -173,10 +175,9 @@ def train_step(
 
     return episode_reward, state
 
-
 # Run loop
 min_episodes_criterion = 20
-max_episodes = 10
+max_episodes = 10000
 max_steps_per_episode = 1000
 lr = 1e-2
 

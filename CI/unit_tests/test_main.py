@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 sys.path.append('/tikhome/tmerkt/PycharmProjects/Jax_RL')
 
-from Total_Background.main import *
+from background.main import *
 
 # Create the environment
 env = gym.make("CartPole-v0")
