@@ -8,13 +8,9 @@ from flax.training import train_state
 import optax
 import tqdm
 import collections  # used for storing last 100 rewards
-from matplotlib import pyplot as plt
 import time
 import sys
 sys.path.append('/tikhome/tmerkt/PycharmProjects/Jax_RL')
-
-from jax_md import simulate, energy, util, quantity, dataclasses, smap
-from jax_md import space as space
 
 # Create the environment
 env = gym.make("CartPole-v1")

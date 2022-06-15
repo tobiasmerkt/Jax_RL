@@ -7,12 +7,10 @@ from flax.training import train_state
 import optax
 import tqdm
 import collections  # used for storing last 100 rewards
-from matplotlib import pyplot as plt
 import time
-import jax_md
 from jax_md import simulate, energy, util, quantity, dataclasses, smap, space as space
-from jax_md.quantity import box_size_at_number_density
 import environment as env
+import matplotlib.pyplot as plt
 
 # Create the environment
 num_particles = 1
@@ -25,11 +23,10 @@ f32 = util.f32
 f64 = util.f64
 
 world = env.World(dim=2, box_size=100)
-forcer = env.Force(force=2, metric=world.metric)
-eve = env.Environment(num_particles, world)
+eve = env.Environment(num_particles, world, reward_value=1)
 
 # Set seed
-seed = 42
+seed = 0
 key = jax.random.PRNGKey(seed)
 key1, key2 = jax.random.split(key)
 np.random.seed(seed)
@@ -62,10 +59,9 @@ def create_train_state(rng, learning_rate):
 
 # Collect training data
 def eve_step(action: jnp.array):
-    reward = eve.step(action)
-    reward = reward[0]["reward"]
-    position = eve.swarm.positions
-    position = position[0]
+    feedback = eve.step(action)
+    reward = feedback[0]["reward"]
+    position = feedback[0]["agent"].position
     return reward, position
 
 
@@ -87,6 +83,7 @@ def run_episode(
     softmax_fn_jit = jit(softmax_fn)
 
     for t in range(max_steps):
+        initial_state = ((initial_state - jnp.mean(initial_state)) / (jnp.std(initial_state) + eps)) #normalise
         action_logits_t, value = apply_fn_jit(params, initial_state)
 
         # Sample action from action probability distribution
@@ -101,8 +98,6 @@ def run_episode(
         values = jnp.append(values, value)
 
         # Apply action to environment to get next state and reward
-        action = jax.device_get(action)
-        action = np.asarray([action], dtype = int)
         reward, position = eve_step(action)
 
         # Store reward
@@ -188,9 +183,9 @@ def train_step(
 
 # Run loop
 min_episodes_criterion = 20
-max_episodes = 750
+max_episodes = 1
 max_steps_per_episode = 100
-lr = 1e-2
+lr = 1e-1
 
 # Stop when average reward >= 195 over 100 consecutive trials
 reward_threshold = 9e5
@@ -207,7 +202,7 @@ state = create_train_state(key1, lr)
 start_time = time.time() #TODO
 with tqdm.trange(max_episodes) as t:
     for i in t:
-        initial_state = eve.swarm.positions[0]
+        initial_state = eve.reset()
         episode_reward, state = train_step(
             initial_state,
             state,
@@ -233,3 +228,27 @@ with tqdm.trange(max_episodes) as t:
 end_time = time.time() #TODO
 print(f'\nSolved at episode {i}: average reward: {running_reward}!')
 print(f'Time Difference: ', end_time - start_time)
+
+# Visualise results
+apply_fn = ActorCritic(num_actions, num_hidden_units).apply
+apply_fn_jit = jit(apply_fn)
+
+position_list = []
+for i in range(20):
+    initial_state = ((initial_state - jnp.mean(initial_state)) / (
+                jnp.std(initial_state) + eps))  # normalise
+    action_logits_t, value = apply_fn_jit(state.params, initial_state)
+
+#TODO: Finish visualisation
+    # Sample action from action probability distribution
+    rng = jax.random.PRNGKey(np.random.randint(0, 1236534623))
+    action = jax.random.categorical(rng, logits=action_logits_t)
+    feedback = eve.step(action)
+    reward = feedback[0]["reward"]
+    initial_state = feedback[0]["agent"].position
+    position_list.append(eve.swarm.positions)
+
+#plt.scatter(position_list)
+plt.grid()
+plt.legend()
+plt.show()
