@@ -183,8 +183,8 @@ def train_step(
 
 # Run loop
 min_episodes_criterion = 20
-max_episodes = 25
-max_steps_per_episode = 200
+max_episodes = 50
+max_steps_per_episode = 300
 lr = 1e-1
 
 # Stop when average reward >= 195 over 100 consecutive trials
@@ -258,7 +258,7 @@ plt.title('Positions')
 plt.grid()
 plt.show()
 
-plt.scatter(rewards)
+plt.plot(rewards)
 plt.title('Rewards')
 plt.grid()
 plt.show()
