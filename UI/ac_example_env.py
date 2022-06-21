@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 # Create the environment
 num_particles = 1
 num_actions = 4
-num_hidden_units = 128
+num_hidden_units = 32
 
 static_cast = util.static_cast
 Array = util.Array
@@ -183,8 +183,8 @@ def train_step(
 
 # Run loop
 min_episodes_criterion = 20
-max_episodes = 1
-max_steps_per_episode = 100
+max_episodes = 25
+max_steps_per_episode = 200
 lr = 1e-1
 
 # Stop when average reward >= 195 over 100 consecutive trials
@@ -233,22 +233,32 @@ print(f'Time Difference: ', end_time - start_time)
 apply_fn = ActorCritic(num_actions, num_hidden_units).apply
 apply_fn_jit = jit(apply_fn)
 
-position_list = []
-for i in range(20):
+positions = jnp.array([])
+rewards = jnp.array([])
+for i in range(100):
     initial_state = ((initial_state - jnp.mean(initial_state)) / (
                 jnp.std(initial_state) + eps))  # normalise
     action_logits_t, value = apply_fn_jit(state.params, initial_state)
 
-#TODO: Finish visualisation
     # Sample action from action probability distribution
     rng = jax.random.PRNGKey(np.random.randint(0, 1236534623))
     action = jax.random.categorical(rng, logits=action_logits_t)
     feedback = eve.step(action)
     reward = feedback[0]["reward"]
-    initial_state = feedback[0]["agent"].position
-    position_list.append(eve.swarm.positions)
+    position = feedback[0]["agent"].position
+    positions = jnp.append(positions, position)
+    rewards = jnp.append(rewards, reward)
 
-#plt.scatter(position_list)
+jnp.save('params', state.params)
+jnp.save('positions_backup', positions)
+jnp.save('rewards_backup', rewards)
+
+plt.scatter(positions[::2], positions[1::2])
+plt.title('Positions')
 plt.grid()
-plt.legend()
+plt.show()
+
+plt.scatter(rewards)
+plt.title('Rewards')
+plt.grid()
 plt.show()

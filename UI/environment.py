@@ -178,7 +178,7 @@ class Environment:
 
         environment_return = []
         for index, agent in enumerate(self.swarm):
-            environment_return.append({"agent": agent, "reward": reward[index]})
+            environment_return.append({"agent": agent, "reward": reward})
 
         return environment_return
 

@@ -14,13 +14,16 @@ f64 = util.f64
 
 world = env.World(dim=2, box_size=100)
 eve = env.Environment(num_particles, world, reward_value=1)
-
-action = jnp.array([0])
-for i in range(10):
+positions = jnp.array([])
+action = jnp.array([1])
+for i in range(5):
     feedback = eve.step(action)
     reward = feedback[0]["reward"]
     position = feedback[0]["agent"].position
-    plt.scatter(eve.swarm.positions[0][0], eve.swarm.positions[0][1], label = i)
+    positions = jnp.append(positions, position)
+
+
+plt.scatter(positions[::2], positions[1::2])
 plt.grid()
-plt.legend()
 plt.show()
+

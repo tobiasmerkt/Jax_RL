@@ -31,9 +31,12 @@ class FindLocation:
             self.location = jnp.array([jnp.ones(self.dim) * 0.5])
 
         rescaled_positions = positions / self.size
-        rewards = 2 * self.reward_value / (jnp.sqrt(2)) * (jnp.sqrt(2) / 2 - self.metric(
+        """rewards = 2 * self.reward_value / (jnp.sqrt(2)) * (jnp.sqrt(2) / 2 - self.metric(
             rescaled_positions,
-            self.location))
+            self.location))"""
+        rewards = -jnp.log(jnp.linalg.norm(rescaled_positions))
+
+
         if self.particle_number != 1:
             return jnp.squeeze(rewards)
         else:
